@@ -32,11 +32,23 @@ export async function sendEmail({
   html: string;
   from?: string;
 }) {
+  // Resend free tier only allows sending to the verified owner email.
+  // DEV_EMAIL_OVERRIDE redirects all outgoing emails to a single address in dev.
+  const effectiveTo =
+    env.NODE_ENV !== "production" && env.DEV_EMAIL_OVERRIDE
+      ? env.DEV_EMAIL_OVERRIDE
+      : to;
+
+  const devPrefix =
+    env.NODE_ENV !== "production" && env.DEV_EMAIL_OVERRIDE
+      ? `[DEV → ${Array.isArray(to) ? to.join(", ") : to}] `
+      : "";
+
   try {
     const { data, error } = await resend.emails.send({
       from: from ?? env.EMAIL_FROM,
-      to,
-      subject,
+      to: effectiveTo,
+      subject: `${devPrefix}${subject}`,
       html,
     });
 

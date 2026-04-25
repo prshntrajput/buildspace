@@ -58,7 +58,7 @@ export const onApplicationSubmitted = inngest.createFunction(
         owners.map(async (owner) => {
           await notificationService.create({
             userId: owner.id,
-            kind: "application.received",
+            kind: "application_received",
             payload: {
               applicationId,
               applicantId,
@@ -128,7 +128,7 @@ export const onApplicationDecided = inngest.createFunction(
 
       await notificationService.create({
         userId: applicantId,
-        kind: "application.decided",
+        kind: "application_decided",
         payload: { applicationId, decision, roleTitle },
       });
 
@@ -231,7 +231,7 @@ export const onUpdatePostedNotify = inngest.createFunction(
           notificationService
             .create({
               userId: m.userId,
-              kind: "update.posted_in_followed",
+              kind: "update_posted_in_followed",
               payload: { updateId, buildRoomId, authorId },
             })
             .catch((e: unknown) =>
@@ -274,7 +274,7 @@ export const onTaskCompletedNotify = inngest.createFunction(
       await notificationService
         .create({
           userId: product.ownerId,
-          kind: "task.assigned",
+          kind: "task_assigned",
           payload: { taskId, completedById, buildRoomId },
         })
         .catch((e: unknown) =>

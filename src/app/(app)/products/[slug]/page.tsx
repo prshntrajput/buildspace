@@ -193,10 +193,12 @@ export default async function ProductDetailPage({ params }: Props) {
                     )}
                   </div>
                   {authUser && !isOwner && (
-                    <Button size="sm" variant="outline">
-                      Apply
-                      <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
+                    <Link href={`/products/${slug}/team`}>
+                      <Button size="sm" variant="outline">
+                        Apply
+                        <ArrowRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </Link>
                   )}
                 </CardContent>
               </Card>
