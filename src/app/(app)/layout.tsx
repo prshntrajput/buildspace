@@ -29,7 +29,7 @@ export default async function AppLayout({
       <AppSidebar user={user} initialUnreadCount={unreadNotifications.length} />
       <div className="flex flex-col flex-1 overflow-hidden">
         <AppTopbar user={user} initialUnreadCount={unreadNotifications.length} />
-        <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 lg:p-8 lg:pb-8">
           {children}
         </main>
       </div>

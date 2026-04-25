@@ -7,9 +7,9 @@ import { logger } from "@/lib/telemetry/logger";
 
 const AGENT_NAME = "IdeaValidator";
 const AGENT_VERSION = "1.0";
-const TIMEOUT_MS = 10_000;
+const TIMEOUT_MS = 30_000;
 
-const SYSTEM_PROMPT = `You are an expert startup advisor on BuildSpace — an execution-first builder platform. Evaluate ideas honestly and constructively. Never hallucinate market data.`;
+const SYSTEM_PROMPT = `You are an expert startup advisor on BuildSpace — an execution-first builder platform. Evaluate ideas honestly and constructively. Never hallucinate market data. Keep all text responses concise.`;
 
 export async function validateIdea(
   input: IdeaValidatorInputType,
@@ -33,7 +33,7 @@ export async function validateIdea(
   }
 
   const prompt = `
-Evaluate this startup idea:
+Evaluate this startup idea. Provide exactly 3–5 risks and exactly 2–3 suggestions (one sentence each).
 
 **Title:** ${parsed.title}
 **Problem:** ${parsed.problem}
@@ -41,8 +41,6 @@ Evaluate this startup idea:
 **Solution:** ${parsed.solution}
 ${parsed.mvpPlan ? `**MVP Plan:** ${parsed.mvpPlan}` : ""}
 ${parsed.tags?.length ? `**Tags:** ${parsed.tags.join(", ")}` : ""}
-
-Provide a structured evaluation.
   `.trim();
 
   const start = Date.now();
@@ -58,12 +56,18 @@ Provide a structured evaluation.
         prompt,
         system: SYSTEM_PROMPT,
         schema: IdeaValidatorOutput,
-        maxTokens: 1024,
+        maxTokens: 2048,
       })
     );
 
     const { object, usage } = await Promise.race([aiPromise, timeoutPromise]);
-    result = object;
+
+    // Clamp arrays in case the model exceeded the requested counts
+    result = {
+      ...object,
+      risks: object.risks.slice(0, 5),
+      suggestions: object.suggestions.slice(0, 3),
+    };
     const latencyMs = Date.now() - start;
 
     await setCached(cacheKey, result, AI_CACHE_TTL.IdeaValidator);

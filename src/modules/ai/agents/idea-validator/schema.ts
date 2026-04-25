@@ -12,8 +12,10 @@ export const IdeaValidatorInput = z.object({
 export const IdeaValidatorOutput = z.object({
   clarityScore: z.number().min(0).max(10),
   marketSignal: z.string().describe("1–2 sentence assessment of market opportunity"),
-  risks: z.array(z.string()).min(1).max(5).describe("Top risks or concerns"),
-  suggestions: z.array(z.string()).min(1).max(3).describe("Concrete improvement suggestions"),
+  // No minItems/maxItems — Gemini ignores those JSON Schema constraints and
+  // Zod then rejects the response. Counts are enforced via prompt + code clamp.
+  risks: z.array(z.string()).describe("Top risks or concerns, one sentence each"),
+  suggestions: z.array(z.string()).describe("Concrete improvement suggestions, one sentence each"),
   overallVerdict: z.enum(["strong", "moderate", "weak"]),
 });
 

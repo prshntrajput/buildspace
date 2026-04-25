@@ -17,24 +17,24 @@ export default async function FeedPage() {
   ]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Feed</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Discover ideas and products being built in public
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Link href="/ideas/new">
-            <Button size="sm">
+            <Button size="sm" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-1" />
               New Idea
             </Button>
           </Link>
           <Link href="/products/new">
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-1" />
               New Product
             </Button>
@@ -65,13 +65,13 @@ export default async function FeedPage() {
       {/* Latest Products */}
       {products.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Active Builds</h2>
-            <Link href="/products" className="text-sm text-muted-foreground hover:underline">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg font-semibold">Active Builds</h2>
+            <Link href="/products" className="text-sm text-muted-foreground hover:underline shrink-0">
               See all
             </Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -81,9 +81,9 @@ export default async function FeedPage() {
 
       {/* Latest Ideas */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Latest Ideas</h2>
-          <Link href="/ideas" className="text-sm text-muted-foreground hover:underline">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-lg font-semibold">Latest Ideas</h2>
+          <Link href="/ideas" className="text-sm text-muted-foreground hover:underline shrink-0">
             See all
           </Link>
         </div>
@@ -95,7 +95,7 @@ export default async function FeedPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
             {ideas.map((idea) => (
               <IdeaCard key={idea.id} idea={idea} />
             ))}
