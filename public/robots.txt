@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Marketing pages
+Allow: /
+Allow: /ideas
+Allow: /products
+Allow: /profile
+
+# Disallow auth and private routes
+Disallow: /settings
+Disallow: /feed
+Disallow: /build-room
+Disallow: /api
+Disallow: /onboarding
+Disallow: /(app)
+
+Sitemap: https://buildspace.app/sitemap.xml
