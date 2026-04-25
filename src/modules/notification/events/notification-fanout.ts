@@ -64,6 +64,7 @@ export const onApplicationSubmitted = inngest.createFunction(
               applicantId,
               applicantName: applicant.displayName,
               roleTitle: role.title,
+              productSlug,
             },
           });
 
@@ -129,7 +130,7 @@ export const onApplicationDecided = inngest.createFunction(
       await notificationService.create({
         userId: applicantId,
         kind: "application_decided",
-        payload: { applicationId, decision, roleTitle },
+        payload: { applicationId, decision, roleTitle, productSlug },
       });
 
       await sendEmailReact({
@@ -166,11 +167,18 @@ export const onMemberJoined = inngest.createFunction(
     retries: 3,
   },
   async ({ event, step }) => {
-    const { userId } = event.data as { userId: string; teamId: string; applicationId: string };
+    const { userId, teamId } = event.data as { userId: string; teamId: string; applicationId: string };
 
     await step.run("welcome-email", async () => {
       const user = await userRepository.findById(userId);
       if (!user) return { skipped: true };
+
+      let buildRoomId = "";
+      const team = await teamRepository.findTeamById(teamId).catch(() => null);
+      if (team) {
+        const buildRoom = await productRepository.findBuildRoomByProductId(team.productId).catch(() => null);
+        buildRoomId = buildRoom?.id ?? "";
+      }
 
       await notificationService.create({
         userId,
@@ -178,6 +186,7 @@ export const onMemberJoined = inngest.createFunction(
         payload: {
           type: "welcome",
           message: "Welcome to the team! Head to the Build Room to get started.",
+          buildRoomId,
         },
       });
 

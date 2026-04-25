@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc, lt } from "drizzle-orm";
+import { eq, and, isNull, desc, lt, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { products, buildRooms, users } from "../../../../drizzle/schema";
 import type { Product, BuildRoom } from "../types";
@@ -119,6 +119,40 @@ export class ProductRepository {
       .where(and(eq(products.ownerId, ownerId), isNull(products.deletedAt)))
       .orderBy(desc(products.updatedAt));
     return rows.map(mapToProduct);
+  }
+
+  async listBuildRoomsByProductIds(productIds: string[]): Promise<(BuildRoom & { productName: string; productSlug: string })[]> {
+    if (productIds.length === 0) return [];
+    const rows = await db
+      .select({
+        id: buildRooms.id,
+        productId: buildRooms.productId,
+        title: buildRooms.title,
+        description: buildRooms.description,
+        progressPct: buildRooms.progressPct,
+        executionMode: buildRooms.executionMode,
+        createdAt: buildRooms.createdAt,
+        updatedAt: buildRooms.updatedAt,
+        productName: products.name,
+        productSlug: products.slug,
+      })
+      .from(buildRooms)
+      .innerJoin(products, eq(buildRooms.productId, products.id))
+      .where(and(inArray(buildRooms.productId, productIds), isNull(products.deletedAt)))
+      .orderBy(desc(buildRooms.updatedAt));
+
+    return rows.map((r) => ({
+      id: r.id,
+      productId: r.productId,
+      title: r.title,
+      description: r.description,
+      progressPct: r.progressPct,
+      executionMode: r.executionMode,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      productName: r.productName,
+      productSlug: r.productSlug,
+    }));
   }
 
   async findInactiveForArchive(inactiveDays: number): Promise<Product[]> {

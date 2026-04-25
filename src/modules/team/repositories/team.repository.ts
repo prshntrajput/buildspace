@@ -167,6 +167,15 @@ export class TeamRepository {
       .where(eq(teamMemberships.teamId, teamId));
     return rows.map(mapMembership);
   }
+
+  async listProductIdsByMember(userId: string): Promise<string[]> {
+    const rows = await db
+      .select({ productId: teams.productId })
+      .from(teamMemberships)
+      .innerJoin(teams, eq(teamMemberships.teamId, teams.id))
+      .where(eq(teamMemberships.userId, userId));
+    return rows.map((r) => r.productId);
+  }
 }
 
 export const teamRepository = new TeamRepository();

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createTaskAction, completeTaskAction, moveTaskAction } from "@/modules/build-room/_actions";
 import { createSupabaseBrowserClient } from "@/lib/auth/client";
@@ -24,6 +25,7 @@ const COLUMNS: { status: TaskStatus; label: string; icon: React.ReactNode }[] = 
 type Props = {
   buildRoomId: string;
   initialTasks: Task[];
+  initialProgressPct: number;
   canEdit: boolean;
 };
 
@@ -47,8 +49,19 @@ function mapRealtimeRow(row: Record<string, unknown>): Task {
   };
 }
 
-export function TaskBoard({ buildRoomId, initialTasks, canEdit }: Props) {
+export function TaskBoard({ buildRoomId, initialTasks, initialProgressPct, canEdit }: Props) {
   const [tasks, setTasks] = useState(initialTasks);
+
+  const progressPct = useMemo(() => {
+    const eligible = tasks.filter((t) => t.status !== "cancelled");
+    if (eligible.length === 0) return initialProgressPct;
+    const totalWeight = eligible.reduce((s, t) => s + t.weight, 0);
+    if (totalWeight === 0) return 0;
+    const doneWeight = eligible
+      .filter((t) => t.status === "done")
+      .reduce((s, t) => s + t.weight, 0);
+    return Math.round((doneWeight / totalWeight) * 100);
+  }, [tasks, initialProgressPct]);
   const [connected, setConnected] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -161,6 +174,15 @@ export function TaskBoard({ buildRoomId, initialTasks, canEdit }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Live progress bar */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Build Progress</span>
+          <span className="font-medium">{progressPct}%</span>
+        </div>
+        <Progress value={progressPct} className="h-2" />
+      </div>
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {connected ? (

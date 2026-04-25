@@ -47,6 +47,12 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const isOwner = authUser?.id === product.ownerId;
 
+  const membership =
+    authUser && team && !isOwner
+      ? await teamRepository.findMembership(team.id, authUser.id).catch(() => null)
+      : null;
+  const isMember = !!membership;
+
   const STAGE_LABELS: Record<typeof product.stage, string> = {
     ideation: "Ideation",
     building: "Building",
@@ -92,7 +98,7 @@ export default async function ProductDetailPage({ params }: Props) {
               </Button>
             </a>
           )}
-          {isOwner && (
+          {(isOwner || isMember) && (
             <Link href={`/build-room/${product.buildRoom.id}`}>
               <Button size="sm">
                 <Wrench className="h-4 w-4 mr-1" />

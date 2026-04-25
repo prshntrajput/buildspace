@@ -42,6 +42,24 @@ import {
   markAllNotificationsReadAction,
 } from "@/modules/notification/_actions";
 
+function getNotificationHref(kind: string, payload: Record<string, unknown>): string | null {
+  switch (kind) {
+    case "application_received":
+      return payload["productSlug"] ? `/products/${payload["productSlug"]}/team` : null;
+    case "application_decided":
+      return payload["productSlug"] ? `/products/${payload["productSlug"]}` : null;
+    case "update_posted_in_followed":
+    case "task_assigned":
+      return payload["buildRoomId"] ? `/build-room/${payload["buildRoomId"]}` : null;
+    case "mention":
+      return payload["buildRoomId"] ? `/build-room/${payload["buildRoomId"]}` : "/feed";
+    case "weekly_digest":
+      return "/feed";
+    default:
+      return null;
+  }
+}
+
 const NAV_ITEMS = [
   { href: "/feed", label: "Feed", icon: Home },
   { href: "/ideas", label: "Ideas", icon: Lightbulb },
@@ -116,14 +134,19 @@ export function AppSidebar({ user, initialUnreadCount }: Props) {
     }
   }
 
-  function handleMarkRead(id: string) {
-    startTransition(async () => {
-      await markNotificationReadAction(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n))
-      );
-      setUnreadCount((c) => Math.max(0, c - 1));
-    });
+  function handleNotifClick(n: NotificationItem) {
+    setNotifOpen(false);
+    const href = getNotificationHref(n.kind, n.payload);
+    if (href) router.push(href);
+    if (!n.readAt) {
+      startTransition(async () => {
+        await markNotificationReadAction(n.id);
+        setNotifications((prev) =>
+          prev.map((x) => (x.id === n.id ? { ...x, readAt: new Date() } : x))
+        );
+        setUnreadCount((c) => Math.max(0, c - 1));
+      });
+    }
   }
 
   function handleMarkAllRead() {
@@ -136,7 +159,7 @@ export function AppSidebar({ user, initialUnreadCount }: Props) {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    router.push("/login");
+    router.replace("/login");
   }
 
   return (
@@ -191,10 +214,16 @@ export function AppSidebar({ user, initialUnreadCount }: Props) {
                     className={`flex flex-col items-start gap-0.5 py-2 cursor-pointer ${
                       !n.readAt ? "bg-muted/50" : ""
                     }`}
-                    onClick={() => !n.readAt && handleMarkRead(n.id)}
+                    onClick={() => handleNotifClick(n)}
                   >
                     <span className="text-sm font-medium capitalize">
                       {KIND_LABEL[n.kind] ?? n.kind.replace(/_/g, " ")}
+                    </span>
+                    <span className="text-xs text-muted-foreground truncate max-w-[220px]">
+                      {n.kind === "application_received" && `${n.payload["applicantName"] ?? ""} → ${n.payload["roleTitle"] ?? ""}`}
+                      {n.kind === "application_decided" && `${n.payload["roleTitle"] ?? ""} — ${n.payload["decision"] ?? ""}`}
+                      {(n.kind === "update_posted_in_followed" || n.kind === "task_assigned") && (n.payload["buildRoomId"] ? "View build room" : "")}
+                      {n.kind === "mention" && String(n.payload["message"] ?? "")}
                     </span>
                     {n.readAt === null && (
                       <span className="text-xs text-primary">• unread</span>

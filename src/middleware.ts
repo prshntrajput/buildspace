@@ -2,6 +2,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const PROTECTED_PATHS = [
+  "/feed",
+  "/ideas/new",
+  "/products/new",
+  "/build-room",
+  "/settings",
+  "/admin",
+  "/onboarding",
+  "/profile",
+];
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -32,23 +43,7 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Redirect unauthenticated users away from protected routes
-  if (!user && pathname.startsWith("/(app)")) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Check if a protected page (not using route groups in URL)
-  const protectedPaths = [
-    "/feed",
-    "/ideas/new",
-    "/products/new",
-    "/build-room",
-    "/settings",
-    "/admin",
-    "/onboarding",
-  ];
-
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p));
 
   if (!user && isProtected) {
     const redirectUrl = request.nextUrl.clone();
@@ -60,6 +55,11 @@ export async function middleware(request: NextRequest) {
   // If signed in and on auth pages, redirect to feed
   if (user && (pathname === "/login" || pathname === "/signup")) {
     return NextResponse.redirect(new URL("/feed", request.url));
+  }
+
+  // Prevent browser from caching protected pages (blocks bfcache back-button exploit)
+  if (isProtected) {
+    supabaseResponse.headers.set("Cache-Control", "no-store");
   }
 
   return supabaseResponse;

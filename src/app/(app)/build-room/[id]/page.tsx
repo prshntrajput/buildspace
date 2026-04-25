@@ -3,10 +3,10 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { getUserOrNull } from "@/lib/auth/server";
 import { productRepository } from "@/modules/product/repositories/product.repository";
+import { teamRepository } from "@/modules/team/repositories/team.repository";
 import { buildRoomService } from "@/modules/build-room/services/build-room.service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { TaskBoard } from "./task-board";
@@ -36,6 +36,13 @@ export default async function BuildRoomPage({ params }: Props) {
 
   const isOwner = authUser?.id === product.ownerId;
 
+  const team = await teamRepository.findTeamByProductId(product.id).catch(() => null);
+  const membership =
+    authUser && team && !isOwner
+      ? await teamRepository.findMembership(team.id, authUser.id).catch(() => null)
+      : null;
+  const isMember = !!membership;
+
   const [tasks, updates, milestones] = await Promise.all([
     buildRoomService.getTasksByBuildRoom(id).catch(() => []),
     buildRoomService.getUpdatesByBuildRoom(id).catch(() => []),
@@ -64,15 +71,6 @@ export default async function BuildRoomPage({ params }: Props) {
         )}
       </div>
 
-      {/* Progress */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Build Progress</span>
-          <span className="font-medium">{buildRoom.progressPct}%</span>
-        </div>
-        <Progress value={buildRoom.progressPct} className="h-2" />
-      </div>
-
       {/* Tabs */}
       <Tabs defaultValue="tasks">
         <TabsList>
@@ -91,7 +89,8 @@ export default async function BuildRoomPage({ params }: Props) {
           <TaskBoard
             buildRoomId={id}
             initialTasks={tasks}
-            canEdit={!!authUser}
+            initialProgressPct={buildRoom.progressPct}
+            canEdit={isOwner || isMember}
           />
         </TabsContent>
 
