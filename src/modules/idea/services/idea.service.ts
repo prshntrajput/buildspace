@@ -130,6 +130,10 @@ export class IdeaService {
     return forked;
   }
 
+  async getTrendingTags(limit = 10): Promise<{ tag: string; count: number }[]> {
+    return ideaRepository.getTrendingTags(limit);
+  }
+
   async getUserIdeas(userId: string, _viewerId?: string): Promise<IdeaWithAuthor[]> {
     return ideaRepository.listByAuthorWithAuthor(userId);
   }

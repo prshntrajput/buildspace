@@ -101,8 +101,8 @@ export function AppTopbar({ user: _user, initialUnreadCount }: Props) {
         <Button variant="ghost" size="icon" onClick={toggleTheme}>
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
-        <Link href="/feed">
-          <Button variant="ghost" size="icon">
+        <Link href="/ideas">
+          <Button variant="ghost" size="icon" aria-label="Search ideas">
             <Search className="h-4 w-4" />
           </Button>
         </Link>

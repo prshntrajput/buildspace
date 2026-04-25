@@ -1,18 +1,19 @@
 import { Metadata } from "next";
+import Link from "next/link";
 import { ideaService } from "@/modules/idea/services/idea.service";
 import { productService } from "@/modules/product/services/product.service";
 import { IdeaCard } from "@/modules/idea/components/idea-card";
 import { ProductCard } from "@/modules/product/components/product-card";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Hash } from "lucide-react";
 
 export const metadata: Metadata = { title: "Feed — BuildSpace" };
 
 export default async function FeedPage() {
-  const [ideas, products] = await Promise.all([
+  const [ideas, products, trendingTags] = await Promise.all([
     ideaService.search({ limit: 10 }),
     productService.listPublic({ limit: 6 }),
+    ideaService.getTrendingTags(10),
   ]);
 
   return (
@@ -40,6 +41,26 @@ export default async function FeedPage() {
           </Link>
         </div>
       </div>
+
+      {/* Trending tags */}
+      {trendingTags.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Hash className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-medium text-muted-foreground">Trending tags</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {trendingTags.map(({ tag, count }) => (
+              <Link key={tag} href={`/ideas?tag=${encodeURIComponent(tag)}`}>
+                <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:border-foreground hover:text-foreground transition-colors">
+                  #{tag}
+                  <span className="text-[10px] opacity-60">{count}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Latest Products */}
       {products.length > 0 && (

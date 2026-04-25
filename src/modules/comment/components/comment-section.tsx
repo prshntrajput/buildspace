@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/utils";
 import { Trash2, MessageSquare } from "lucide-react";
 import { createCommentAction, deleteCommentAction } from "../_actions";
+import { ReportButton } from "@/modules/moderation/components/report-button";
 import type { CommentWithAuthor } from "../repositories/comment.repository";
 
 type Props = {
@@ -100,17 +101,22 @@ export function CommentSection({ parentType, parentId, initialComments, currentU
                   {comment.body}
                 </p>
               </div>
-              {currentUserId === comment.authorId && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleDelete(comment.id)}
-                  disabled={isPending}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              )}
+              <div className="flex items-center gap-1 shrink-0">
+                {currentUserId && currentUserId !== comment.authorId && (
+                  <ReportButton targetType="comment" targetId={comment.id} />
+                )}
+                {currentUserId === comment.authorId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDelete(comment.id)}
+                    disabled={isPending}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
         </ul>

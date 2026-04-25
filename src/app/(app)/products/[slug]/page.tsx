@@ -5,6 +5,9 @@ import { getUserOrNull } from "@/lib/auth/server";
 import { productService } from "@/modules/product/services/product.service";
 import { teamService } from "@/modules/team/services/team.service";
 import { teamRepository } from "@/modules/team/repositories/team.repository";
+import { commentRepository } from "@/modules/comment/repositories/comment.repository";
+import { ReactionBar } from "@/modules/comment/components/reaction-bar";
+import { ReportButton } from "@/modules/moderation/components/report-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,8 +36,14 @@ export default async function ProductDetailPage({ params }: Props) {
   if (!product) notFound();
 
   const team = await teamRepository.findTeamByProductId(product.id).catch(() => null);
-  const openRoles = team ? await teamService.getOpenRoles(team.id).catch(() => []) : [];
-  const members = team ? await teamService.getMembers(team.id).catch(() => []) : [];
+  const [openRoles, members, reactionCounts, userReactions] = await Promise.all([
+    team ? teamService.getOpenRoles(team.id).catch(() => []) : Promise.resolve([]),
+    team ? teamService.getMembers(team.id).catch(() => []) : Promise.resolve([]),
+    commentRepository.getReactionCounts("product", product.id),
+    authUser
+      ? commentRepository.getUserReactions(authUser.id, "product", product.id)
+      : Promise.resolve([]),
+  ]);
 
   const isOwner = authUser?.id === product.ownerId;
 
@@ -97,7 +106,18 @@ export default async function ProductDetailPage({ params }: Props) {
               {openRoles.length} Open Role{openRoles.length !== 1 ? "s" : ""}
             </Button>
           )}
+          {authUser && !isOwner && (
+            <ReportButton targetType="product" targetId={product.id} />
+          )}
         </div>
+
+        <ReactionBar
+          targetType="product"
+          targetId={product.id}
+          initialCounts={reactionCounts}
+          initialUserKinds={userReactions}
+          currentUserId={authUser?.id}
+        />
       </div>
 
       {/* Progress */}

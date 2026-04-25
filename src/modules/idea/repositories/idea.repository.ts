@@ -203,6 +203,26 @@ export class IdeaRepository {
     await db.update(ideas).set({ deletedAt: new Date() }).where(eq(ideas.id, id));
   }
 
+  async getTrendingTags(limit = 10): Promise<{ tag: string; count: number }[]> {
+    const rows = await db.execute(
+      sql`
+        SELECT unnest(tags) AS tag, COUNT(*)::int AS count
+        FROM ideas
+        WHERE status = 'published'
+          AND visibility = 'public'
+          AND deleted_at IS NULL
+          AND created_at > NOW() - INTERVAL '30 days'
+        GROUP BY tag
+        ORDER BY count DESC
+        LIMIT ${limit}
+      `
+    );
+    return (rows as unknown as { tag: string; count: number }[]).map((r) => ({
+      tag: r.tag,
+      count: Number(r.count),
+    }));
+  }
+
   async updateEmbedding(id: string, embedding: number[]): Promise<void> {
     await db
       .update(ideas)

@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { eq, and, isNull, desc, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { comments, reactions, users } from "../../../../drizzle/schema";
 
@@ -105,6 +105,43 @@ export class CommentRepository {
       .update(comments)
       .set({ deletedAt: new Date(), body: "[deleted]" })
       .where(and(eq(comments.id, id), eq(comments.authorId, userId)));
+  }
+
+  async getReactionCounts(
+    targetType: string,
+    targetId: string
+  ): Promise<{ kind: string; count: number }[]> {
+    const rows = await db.execute(
+      sql`
+        SELECT kind, COUNT(*)::int AS count
+        FROM reactions
+        WHERE target_type = ${targetType} AND target_id = ${targetId}
+        GROUP BY kind
+        ORDER BY count DESC
+      `
+    );
+    return (rows as unknown as { kind: string; count: number }[]).map((r) => ({
+      kind: r.kind,
+      count: Number(r.count),
+    }));
+  }
+
+  async getUserReactions(
+    userId: string,
+    targetType: string,
+    targetId: string
+  ): Promise<string[]> {
+    const rows = await db
+      .select({ kind: reactions.kind })
+      .from(reactions)
+      .where(
+        and(
+          eq(reactions.userId, userId),
+          eq(reactions.targetType, targetType),
+          eq(reactions.targetId, targetId)
+        )
+      );
+    return rows.map((r) => r.kind);
   }
 
   async toggleReaction(

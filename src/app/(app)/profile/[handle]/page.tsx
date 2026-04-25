@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/modules/product/components/product-card";
 import { IdeaCard } from "@/modules/idea/components/idea-card";
 import { formatDate } from "@/lib/utils";
+import { ReportButton } from "@/modules/moderation/components/report-button";
 import { MapPin, Globe, Calendar } from "lucide-react";
 
 type Props = { params: Promise<{ handle: string }> };
@@ -101,10 +102,12 @@ export default async function ProfilePage({ params }: Props) {
                 </span>
               </div>
             </div>
-            {isOwn && (
+            {isOwn ? (
               <Link href="/settings/profile">
                 <Button variant="outline" size="sm">Edit Profile</Button>
               </Link>
+            ) : authUser && (
+              <ReportButton targetType="user" targetId={profile.id} />
             )}
           </div>
 

@@ -11,7 +11,10 @@ import { ArrowUp, GitFork, Lightbulb, AlertTriangle, CheckCircle, Clock } from "
 import Link from "next/link";
 import type { IdeaAIReview } from "@/modules/idea/types";
 import { commentService } from "@/modules/comment/services/comment.service";
+import { commentRepository } from "@/modules/comment/repositories/comment.repository";
 import { CommentSection } from "@/modules/comment/components/comment-section";
+import { ReactionBar } from "@/modules/comment/components/reaction-bar";
+import { ReportButton } from "@/modules/moderation/components/report-button";
 import { Separator } from "@/components/ui/separator";
 import { UpvoteButton } from "./upvote-button";
 import { DeleteIdeaButton } from "./delete-idea-button";
@@ -39,7 +42,13 @@ export default async function IdeaDetailPage({ params }: Props) {
   const hasUpvoted = authUser
     ? await ideaService.hasUpvoted(idea.id, authUser.id).catch(() => false)
     : false;
-  const comments = await commentService.getThreadWithAuthors("idea", idea.id);
+  const [comments, reactionCounts, userReactions] = await Promise.all([
+    commentService.getThreadWithAuthors("idea", idea.id),
+    commentRepository.getReactionCounts("idea", idea.id),
+    authUser
+      ? commentRepository.getUserReactions(authUser.id, "idea", idea.id)
+      : Promise.resolve([]),
+  ]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -104,7 +113,18 @@ export default async function IdeaDetailPage({ params }: Props) {
           {authUser?.id === idea.authorId && (
             <DeleteIdeaButton ideaId={idea.id} />
           )}
+          {authUser && authUser.id !== idea.authorId && (
+            <ReportButton targetType="idea" targetId={idea.id} />
+          )}
         </div>
+
+        <ReactionBar
+          targetType="idea"
+          targetId={idea.id}
+          initialCounts={reactionCounts}
+          initialUserKinds={userReactions}
+          currentUserId={authUser?.id}
+        />
       </div>
 
       {/* AI Review Banner */}
