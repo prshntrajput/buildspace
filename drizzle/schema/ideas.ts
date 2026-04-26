@@ -9,7 +9,7 @@ import {
   uniqueIndex,
   customType,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { sql, isNull } from "drizzle-orm";
 import { visibilityEnum, ideaStatusEnum } from "./enums";
 import { users } from "./users";
 
@@ -65,6 +65,14 @@ export const ideas = pgTable(
     index("ideas_status_idx").on(t.status),
     index("ideas_tags_idx").using("gin", sql`${t.tags}`),
     index("ideas_created_at_idx").on(t.createdAt),
+    // Composite partial index for the main feed query:
+    // WHERE status='published' AND visibility='public' AND deleted_at IS NULL
+    // ORDER BY created_at DESC
+    index("ideas_published_feed_idx")
+      .on(t.status, t.visibility, t.createdAt)
+      .where(isNull(t.deletedAt)),
+    // HNSW vector index for cosine similarity search (pgvector >=0.5)
+    index("ideas_embedding_hnsw_idx").using("hnsw", sql`embedding vector_cosine_ops`),
   ]
 );
 

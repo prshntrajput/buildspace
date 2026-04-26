@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,8 @@ import { formatDate } from "@/lib/utils";
 import { Trash2, MessageSquare } from "lucide-react";
 import { createCommentAction, deleteCommentAction } from "../_actions";
 import { ReportButton } from "@/modules/moderation/components/report-button";
+import { createSupabaseBrowserClient } from "@/lib/auth/client";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import type { CommentWithAuthor } from "../repositories/comment.repository";
 
 type Props = {
@@ -22,6 +24,47 @@ export function CommentSection({ parentType, parentId, initialComments, currentU
   const [body, setBody] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel(`comments:${parentId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "comments", filter: `parent_id=eq.${parentId}` },
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+          const row = payload.new as Record<string, unknown>;
+          const authorId = String(row["author_id"] ?? "");
+          if (authorId === currentUserId) return;
+          const newComment: CommentWithAuthor = {
+            id: String(row["id"] ?? ""),
+            parentType: parentType,
+            parentId: parentId,
+            parentCommentId: null,
+            authorId,
+            body: String(row["body"] ?? ""),
+            createdAt: new Date(String(row["created_at"] ?? Date.now())),
+            updatedAt: new Date(String(row["updated_at"] ?? Date.now())),
+            deletedAt: null,
+            author: { id: authorId, handle: "", displayName: "User", avatarUrl: null },
+          };
+          setComments((prev) =>
+            prev.some((c) => c.id === newComment.id) ? prev : [newComment, ...prev]
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "comments", filter: `parent_id=eq.${parentId}` },
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+          const row = payload.old as Record<string, unknown>;
+          const deletedId = String(row["id"] ?? "");
+          setComments((prev) => prev.filter((c) => c.id !== deletedId));
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [parentId, parentType, currentUserId]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

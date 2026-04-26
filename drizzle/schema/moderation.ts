@@ -29,6 +29,8 @@ export const moderationReports = pgTable(
   (t) => [
     index("moderation_reports_status_idx").on(t.status),
     index("moderation_reports_target_idx").on(t.targetType, t.targetId),
+    // For the per-reporter rate-limit query: WHERE reporter_id=? AND status=?
+    index("moderation_reports_reporter_status_idx").on(t.reporterId, t.status),
   ]
 );
 

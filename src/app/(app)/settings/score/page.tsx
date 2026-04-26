@@ -23,7 +23,7 @@ const KIND_LABEL: Record<string, string> = {
   milestone_shipped: "Milestone Shipped",
   commit_linked: "Commit Linked",
   peer_endorsed: "Peer Endorsement",
-  backer_received: "Backer Received",
+  backer_received: "Supporter Received",
   inactivity_penalty: "Inactivity Penalty",
   abandoned_penalty: "Abandoned Penalty",
 };

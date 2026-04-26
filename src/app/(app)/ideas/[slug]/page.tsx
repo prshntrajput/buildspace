@@ -5,9 +5,9 @@ import { getUserOrNull } from "@/lib/auth/server";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
-import { ArrowUp, GitFork, Lightbulb, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { ArrowUp, GitFork, Lightbulb } from "lucide-react";
 import Link from "next/link";
 import type { IdeaAIReview } from "@/modules/idea/types";
 import { commentService } from "@/modules/comment/services/comment.service";
@@ -18,6 +18,7 @@ import { ReportButton } from "@/modules/moderation/components/report-button";
 import { Separator } from "@/components/ui/separator";
 import { UpvoteButton } from "./upvote-button";
 import { DeleteIdeaButton } from "./delete-idea-button";
+import { AiReviewLive } from "./ai-review-live";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -128,57 +129,7 @@ export default async function IdeaDetailPage({ params }: Props) {
       </div>
 
       {/* AI Review Banner */}
-      {aiReview && (
-        <Card className={
-          aiReview.status === "complete"
-            ? "border-primary/30 bg-primary/5"
-            : aiReview.status === "pending" || aiReview.status === undefined
-            ? "border-yellow-500/30 bg-yellow-500/5"
-            : "border-muted"
-        }>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              {aiReview.status === "complete" ? (
-                <><CheckCircle className="h-4 w-4 text-primary" /> AI Suggestion <span className="text-muted-foreground font-normal">(not a verdict)</span></>
-              ) : aiReview.status === "pending" ? (
-                <><Clock className="h-4 w-4 text-yellow-500" /> AI Review In Progress...</>
-              ) : (
-                <><AlertTriangle className="h-4 w-4" /> AI Review Pending</>
-              )}
-            </CardTitle>
-          </CardHeader>
-          {aiReview.status === "complete" && (
-            <CardContent className="pt-0 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Clarity Score:</span>
-                <Badge variant={aiReview.clarityScore >= 7 ? "default" : aiReview.clarityScore >= 5 ? "secondary" : "destructive"}>
-                  {aiReview.clarityScore}/10
-                </Badge>
-                <Badge variant={aiReview.overallVerdict === "strong" ? "default" : aiReview.overallVerdict === "moderate" ? "secondary" : "destructive"}>
-                  {aiReview.overallVerdict}
-                </Badge>
-              </div>
-              <p className="text-sm"><strong>Market Signal:</strong> {aiReview.marketSignal}</p>
-              {aiReview.risks?.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium mb-1">Risks:</p>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    {aiReview.risks.map((r, i) => <li key={i} className="flex gap-2"><span>•</span>{r}</li>)}
-                  </ul>
-                </div>
-              )}
-              {aiReview.suggestions?.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium mb-1">Suggestions:</p>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    {aiReview.suggestions.map((s, i) => <li key={i} className="flex gap-2"><span>→</span>{s}</li>)}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          )}
-        </Card>
-      )}
+      <AiReviewLive ideaId={idea.id} initialReview={aiReview} />
 
       {/* Idea Content */}
       <div className="space-y-6">

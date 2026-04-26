@@ -9,6 +9,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql, isNull } from "drizzle-orm";
 import { visibilityEnum, productStageEnum } from "./enums";
 import { users } from "./users";
 import { ideas } from "./ideas";
@@ -41,6 +42,16 @@ export const products = pgTable(
     index("products_owner_id_idx").on(t.ownerId),
     index("products_stage_updated_idx").on(t.stage, t.updatedAt),
     index("products_last_activity_idx").on(t.lastActivityAt),
+    // Composite partial index for the public product feed:
+    // WHERE visibility='public' AND deleted_at IS NULL ORDER BY updated_at DESC
+    index("products_public_updated_idx")
+      .on(t.visibility, t.updatedAt)
+      .where(isNull(t.deletedAt)),
+    // Composite partial index for the inactivity archive cron:
+    // WHERE stage='building' AND last_activity_at < threshold AND deleted_at IS NULL
+    index("products_stage_activity_idx")
+      .on(t.stage, t.lastActivityAt)
+      .where(isNull(t.deletedAt)),
   ]
 );
 

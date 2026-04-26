@@ -43,8 +43,9 @@ export const teamRoles = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index("team_roles_team_id_idx").on(t.teamId),
-    index("team_roles_status_idx").on(t.status),
+    // Composite covers both (team_id)-only queries (prefix) and (team_id, status) queries.
+    // The old single-column status index had near-zero selectivity (3 values) so it's dropped.
+    index("team_roles_team_status_idx").on(t.teamId, t.status),
   ]
 );
 

@@ -55,7 +55,7 @@ const KIND_LABEL: Record<string, string> = {
   task_assigned: "task assigned to you",
   task_due_soon: "task due soon",
   update_posted_in_followed: "new update",
-  backing_received: "new backer",
+  backing_received: "new supporter",
   streak_broken: "streak broken",
   weekly_digest: "weekly digest",
 };

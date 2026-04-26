@@ -23,7 +23,7 @@ const ROLES = [
   },
   {
     id: "backer" as const,
-    label: "Backer",
+    label: "Supporter",
     description: "I want to discover and support builders",
     icon: TrendingUp,
   },
