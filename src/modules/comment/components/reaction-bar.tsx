@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { toggleReactionAction } from "../_actions";
+import { createSupabaseBrowserClient } from "@/lib/auth/client";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 const REACTIONS = ["👍", "❤️", "🚀", "💡"] as const;
 type ReactionKind = (typeof REACTIONS)[number];
@@ -28,11 +30,55 @@ export function ReactionBar({
   });
   const [userKinds, setUserKinds] = useState<Set<string>>(new Set(initialUserKinds));
   const [isPending, startTransition] = useTransition();
+  const isPendingRef = useRef(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel(`reactions:${targetType}:${targetId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "reactions",
+          filter: `target_id=eq.${targetId}`,
+        },
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+          if (isPendingRef.current) return;
+          const row = payload.new as Record<string, unknown>;
+          if (String(row["user_id"] ?? "") === currentUserId) return;
+          const kind = String(row["kind"] ?? "");
+          if (!kind) return;
+          setCounts((prev) => ({ ...prev, [kind]: (prev[kind] ?? 0) + 1 }));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "reactions",
+          filter: `target_id=eq.${targetId}`,
+        },
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+          if (isPendingRef.current) return;
+          const row = payload.old as Record<string, unknown>;
+          if (String(row["user_id"] ?? "") === currentUserId) return;
+          const kind = String(row["kind"] ?? "");
+          if (!kind) return;
+          setCounts((prev) => ({ ...prev, [kind]: Math.max(0, (prev[kind] ?? 0) - 1) }));
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [targetId, targetType, currentUserId]);
 
   function handleToggle(kind: ReactionKind) {
     if (!currentUserId) return;
 
     const wasReacted = userKinds.has(kind);
+    isPendingRef.current = true;
     // Optimistic update
     setCounts((prev) => ({
       ...prev,
@@ -60,6 +106,7 @@ export function ReactionBar({
           return next;
         });
       }
+      isPendingRef.current = false;
     });
   }
 
